@@ -1,0 +1,491 @@
+import java.util.Scanner;
+
+/**
+ * Records the teeth of the members of one Florida family, and lets the user print the records,
+ * extract teeth, and report the family's root canals.
+ * @author Paloma Alonso
+ */
+public class DentalRecords {
+
+    /**
+     * Public Scanner object to use the keyboard
+     */
+    private static final Scanner keyboard = new Scanner(System.in);
+    /**
+     * Maximum number of people in the family
+     */
+    private static final int MAX_PEOPLE = 6;
+    /**
+     * Maximum number of teeth (including missing teeth) in each of the uppers and lowers
+     */
+    private static final int MAX_TEETH = 8;
+    /**
+     * Number of layers of teeth (uppers and lowers) for each person
+     */
+    private static final int NUMBER_OF_LAYERS = 2;
+    /**
+     * Index of the uppers in the teeth array
+     */
+    private static final int UPPER = 0;
+    /**
+     * Index of the lowers in the teeth array
+     */
+    private static final int LOWER = 1;
+    /**
+     * Tooth type letter for an incisor
+     */
+    private static final char INCISOR = 'I';
+    /**
+     * Tooth type letter for a bicuspid
+     */
+    private static final char BICUSPID = 'B';
+    /**
+     * Tooth type letter for a missing tooth
+     */
+    private static final char MISSING = 'M';
+    /**
+     * Filler for unused columns (where there was never a tooth)
+     */
+    private static final char NO_TOOTH = ' ';
+    /**
+     * Menu choice letters
+     */
+    private static final char PRINT = 'P';
+    private static final char EXTRACT = 'E';
+    private static final char ROOT = 'R';
+    private static final char EXIT = 'X';
+    /**
+     * All the valid menu choice letters
+     */
+    private static final String MENU_CHOICES = "" + PRINT + EXTRACT + ROOT + EXIT;
+    /**
+     * Layer choice letters
+     */
+    private static final char UPPER_LETTER = 'U';
+    private static final char LOWER_LETTER = 'L';
+    /**
+     * All the valid layer choice letters
+     */
+    private static final String LAYER_CHOICES = "" + UPPER_LETTER + LOWER_LETTER;
+    /**
+     * What is returned when a family member is not found
+     */
+    private static final int NOT_FOUND = -1;
+    /**
+     * Format for the prompts so that the colons line up
+     */
+    private static final String PROMPT_FORMAT = "%-43s : ";
+
+    /**
+     * The main method
+     * @param args Passed in from command line
+     */
+    public static void main(String[] args) {
+
+        String[] names;
+        char[][][] teeth;
+        int familySize;
+
+//set up the data structures
+        names = new String[MAX_PEOPLE];
+        teeth = new char[MAX_PEOPLE][NUMBER_OF_LAYERS][MAX_TEETH];
+        initializeTeeth(teeth);
+
+//get the family's details
+        System.out.println("Welcome to the Floridian Tooth Records");
+        System.out.println("--------------------------------------");
+        familySize = getFamilySize();
+        getFamilyRecords(names,teeth,familySize);
+
+//Do what the user wants
+        runMenu(names,teeth,familySize);
+    } // end of main method
+
+    /**
+     * Fill the teeth array with the no tooth filler, so you can recognize the unused columns
+     * @param teeth The teeth array, organized by person, layer, tooth
+     */
+    private static void initializeTeeth(char[][][] teeth) {
+
+        int person;
+        int layer;
+        int tooth;
+
+        for (person = 0; person < MAX_PEOPLE; person++) {
+            for (layer = 0; layer < NUMBER_OF_LAYERS; layer++) {
+                for (tooth = 0; tooth < MAX_TEETH; tooth++) {
+                    teeth[person][layer][tooth] = NO_TOOTH;
+                }
+            }
+        }
+    }// end of initializeTeeth method
+
+    /**
+     * Get the number of people in the family
+     * @return The number of people, from 1 to MAX_PEOPLE
+     */
+    private static int getFamilySize() {
+
+        return(getNumberInRange("Please enter number of people in the family",
+                "Invalid number of people, try again",1,MAX_PEOPLE));
+    }// end of getFamily Size method
+
+    /**
+     * Read an integer from the user, asking again until it is in the range
+     * @param prompt The prompt for the first attempt
+     * @param error The prompt for the later attempts
+     * @param minimum The smallest acceptable number
+     * @param maximum The largest acceptable number
+     * @return The number, which is in the range
+     */
+    private static int getNumberInRange(String prompt,String error,int minimum,int maximum) {
+
+        int number;
+
+        System.out.printf(PROMPT_FORMAT,prompt);
+        number = keyboard.nextInt();
+        while (number < minimum || number > maximum) {
+            System.out.printf(PROMPT_FORMAT,error);
+            number = keyboard.nextInt();
+        }
+//use keyboard so that later nextLine calls work
+        keyboard.nextLine();
+
+        return(number);
+    }// end of getNumberInRange method
+
+    /**
+     * Read one of the letters in the valid letters, in upper or lower case, from the user
+     * @param prompt The prompt for the first attempt
+     * @param error The prompt for the later attempts
+     * @param validLetters The acceptable letters
+     * @return The letter in upper case
+     */
+    private static char getLetter(String prompt,String error,String validLetters) {
+
+        String input;
+
+        System.out.printf(PROMPT_FORMAT,prompt);
+        input = keyboard.nextLine().toUpperCase();
+        while (input.length() != 1 || validLetters.indexOf(input.charAt(0)) < 0) {
+            System.out.printf(PROMPT_FORMAT,error);
+            input = keyboard.nextLine().toUpperCase();
+        }
+
+        return(input.charAt(0));
+    }// end of getLetter method
+
+    /**
+     * Get the name, uppers, and lowers for each person in the family
+     * @param names The names of the family members
+     * @param teeth The teeth array, organized by person, layer, tooth
+     * @param familySize The number of people in the family
+     */
+    private static void getFamilyRecords(String[] names,char[][][] teeth,int familySize) {
+
+        int person;
+
+        for (person = 0; person < familySize; person++) {
+            System.out.printf(PROMPT_FORMAT,"Please enter the name for family member " +
+                    (person + 1));
+            names[person] = keyboard.nextLine();
+            getTeethRow(teeth[person][UPPER],"Please enter the uppers for " + names[person]);
+            getTeethRow(teeth[person][LOWER],"Please enter the lowers for " + names[person]);
+        }
+    }//end of getFamilyRecords method
+
+    /**
+     * Read a valid string of tooth types from the user, and store it in a row of teeth
+     * @param teethRow The row (uppers or lowers) of one person, need to be filled in
+     * @param prompt The prompt for the first attempt
+     */
+    private static void getTeethRow(char[] teethRow,String prompt) {
+
+        String toothString;
+        int tooth;
+
+        System.out.printf(PROMPT_FORMAT,prompt);
+        toothString = keyboard.nextLine().toUpperCase();
+        while (!onlyToothTypes(toothString) || toothString.length() > MAX_TEETH) {
+            if (!onlyToothTypes(toothString)) {
+                System.out.printf(PROMPT_FORMAT,"Invalid teeth types, try again");
+            } else {
+                System.out.printf(PROMPT_FORMAT,"Too many teeth, try again");
+            }
+            toothString = keyboard.nextLine().toUpperCase();
+        }
+
+//Copy the teeth into the row
+        for (tooth = 0; tooth < toothString.length(); tooth++) {
+            teethRow[tooth] = toothString.charAt(tooth);
+        }
+    }// end of getTeethRow method
+
+    /**
+     * Check that a string is not empty and has only tooth type letters
+     * @param toothString check the string in upper case
+     * @return True if the string has at least one letter and all letters are tooth types
+     */
+    private static boolean onlyToothTypes(String toothString) {
+
+        boolean valid;
+        int position;
+        char tooth;
+
+        valid = toothString.length() > 0;
+        for (position = 0; position < toothString.length(); position++) {
+            tooth = toothString.charAt(position);
+            if (tooth != INCISOR && tooth != BICUSPID && tooth != MISSING) {
+                valid = false;
+            }
+        }
+
+        return(valid);
+    }// end of onlyToothTypes method
+
+    /**
+     * Repeatedly offer the menu and do what the user chooses, until they exit
+     * @param names The names of the family members
+     * @param teeth The teeth array, indexed by person, layer, tooth
+     * @param familySize The number of people in the family
+     */
+    private static void runMenu(String[] names,char[][][] teeth,int familySize) {
+
+        char choice;
+
+        do {
+            System.out.println();
+            choice = getLetter("(P)rint, (E)xtract, (R)oot, e(X)it",
+                    "Invalid menu option, try again",MENU_CHOICES);
+            if (choice == PRINT) {
+                printTeeth(names,teeth,familySize);
+            } else if (choice == EXTRACT) {
+                extractTooth(names,teeth,familySize);
+            } else if (choice == ROOT) {
+                reportRootCanals(teeth,familySize);
+            }
+        } while (choice != EXIT);
+
+        System.out.println("\nExiting the Floridian Tooth Records :-)");
+    }//end of runMenu method
+
+    /**
+     * Print the teeth of every person in the family
+     * @param names The names of the family members
+     * @param teeth The teeth array, organized by person, layer, tooth
+     * @param familySize The number of people in the family
+     */
+    private static void printTeeth(String[] names,char[][][] teeth,int familySize) {
+
+        int person;
+
+        System.out.println();
+        for (person = 0; person < familySize; person++) {
+            System.out.println(names[person]);
+            printTeethRow("  Uppers:",teeth[person][UPPER]);
+            printTeethRow("  Lowers:",teeth[person][LOWER]);
+        }
+    }//end of printTeeth method
+
+    /**
+     * Print one row of teeth, with tooth numbers, skipping the unused columns
+     * @param label The label for the row
+     * @param teethRow The row (uppers or lowers) of one person
+     */
+    private static void printTeethRow(String label,char[] teethRow) {
+
+        int tooth;
+
+        System.out.print(label);
+        for (tooth = 0; tooth < MAX_TEETH; tooth++) {
+            if (teethRow[tooth] != NO_TOOTH) {
+                System.out.printf("  %d:%c",tooth + 1,teethRow[tooth]);
+            }
+        }
+        System.out.println();
+    }//end of printTeethRow method
+
+    /**
+     * Extract a tooth chosen by the user, by making it a missing tooth
+     * @param names The names of the family members
+     * @param teeth The teeth array, organized by person, layer, tooth
+     * @param familySize The number of people in the family
+     */
+    private static void extractTooth(String[] names,char[][][] teeth,int familySize) {
+
+        int person;
+        int layer;
+        int toothNumber;
+
+        person = getFamilyMember(names,familySize);
+        layer = getLayer();
+        toothNumber = getToothNumber(teeth[person][layer]);
+        teeth[person][layer][toothNumber - 1] = MISSING;
+    }// end of extractTooth method
+
+    /**
+     * Get the family member to extract from, ignoring case
+     * @param names The names of the family members
+     * @param familySize The number of people in the family
+     * @return The index of the family member
+     */
+    private static int getFamilyMember(String[] names,int familySize) {
+
+        String name;
+        int person;
+
+        System.out.printf(PROMPT_FORMAT,"Which family member");
+        name = keyboard.nextLine();
+        person = findName(names,familySize,name);
+        while (person == NOT_FOUND) {
+            System.out.printf(PROMPT_FORMAT,"Invalid family member, try again");
+            name = keyboard.nextLine();
+            person = findName(names,familySize,name);
+        }
+
+        return(person);
+    }// end of getFamilyMember method
+
+    /**
+     * Find a name in the family, ignoring case
+     * @param names The names of the family members
+     * @param familySize The number of people in the family
+     * @param name The name to look for
+     * @return The index of the family member, or NOT_FOUND
+     */
+    private static int findName(String[] names,int familySize,String name) {
+
+        int person;
+        int foundAt;
+
+        foundAt = NOT_FOUND;
+        for (person = 0; person < familySize; person++) {
+            if (names[person].equalsIgnoreCase(name)) {
+                foundAt = person;
+            }
+        }
+
+        return(foundAt);
+    }// end of findName method
+
+    /**
+     * Get the layer of teeth to extract from
+     * @return The index of the layer, UPPER or LOWER
+     */
+    private static int getLayer() {
+
+        char letter;
+        int layer;
+
+        letter = getLetter("Which tooth layer (U)pper or (L)ower","Invalid layer, try again",
+                LAYER_CHOICES);
+        if (letter == UPPER_LETTER) {
+            layer = UPPER;
+        } else {
+            layer = LOWER;
+        }
+
+        return(layer);
+    }// end of getLayer method
+
+    /**
+     * Get the number of a tooth that is in the row and is not already missing
+     * @param teethRow The row (uppers or lowers) of one person
+     * @return The tooth number, counting from 1
+     */
+    private static int getToothNumber(char[] teethRow) {
+
+        int toothCount;
+        int toothNumber;
+
+        toothCount = countTeeth(teethRow);
+        toothNumber = getNumberInRange("Which tooth number","Invalid tooth number, try again",1,
+                toothCount);
+        while (teethRow[toothNumber - 1] == MISSING) {
+            toothNumber = getNumberInRange("Missing tooth, try again",
+                    "Invalid tooth number, try again",1,toothCount);
+        }
+
+        return(toothNumber);
+    }// end of getToothNumber method
+
+    /**
+     * Count the teeth positions in a row, including missing teeth but not unused columns
+     * @param teethRow The row (uppers or lowers) of one person
+     * @return The number of teeth positions
+     */
+    private static int countTeeth(char[] teethRow) {
+
+        int tooth;
+        int count;
+
+        count = 0;
+        for (tooth = 0; tooth < MAX_TEETH; tooth++) {
+            if (teethRow[tooth] != NO_TOOTH) {
+                count++;
+            }
+        }
+
+        return(count);
+    }// end of countTeeth method
+
+    /**
+     * Report the roots of the quadratic equation Ix^2 + Bx - M, where I, B, and M are the
+     * family's numbers of incisors, bicuspids, and missing teeth
+     * @param teeth The teeth array, indexed by person, layer, tooth
+     * @param familySize The number of people in the family
+     */
+    private static void reportRootCanals(char[][][] teeth,int familySize) {
+
+        int incisors;
+        int bicuspids;
+        int missing;
+        double squareRoot;
+        double firstRoot;
+        double secondRoot;
+
+        incisors = countTeethOfType(teeth,familySize,INCISOR);
+        bicuspids = countTeethOfType(teeth,familySize,BICUSPID);
+        missing = countTeethOfType(teeth,familySize,MISSING);
+
+//----With no incisors the equation is not quadratic, this means that it would divide by 0
+        if (incisors == 0) {
+            System.out.println("No root canals, because the family has no incisors");
+        } else {
+            squareRoot = Math.sqrt(bicuspids * bicuspids + 4.0 * incisors * missing);
+            firstRoot = (-bicuspids + squareRoot) / (2.0 * incisors);
+            secondRoot = (-bicuspids - squareRoot) / (2.0 * incisors);
+            System.out.printf("One root canal at     %.2f%n",firstRoot);
+            System.out.printf("Another root canal at %.2f%n",secondRoot);
+        }
+    }// end of reportRootCanals method
+
+    /**
+     * Count the teeth of one type across the whole family
+     * @param teeth The teeth array, indexed by person, layer, tooth
+     * @param familySize The number of people in the family
+     * @param type The tooth type letter to count
+     * @return The number of teeth of that type
+     */
+    private static int countTeethOfType(char[][][] teeth,int familySize,char type) {
+
+        int person;
+        int layer;
+        int tooth;
+        int count;
+
+        count = 0;
+        for (person = 0; person < familySize; person++) {
+            for (layer = 0; layer < NUMBER_OF_LAYERS; layer++) {
+                for (tooth = 0; tooth < MAX_TEETH; tooth++) {
+                    if (teeth[person][layer][tooth] == type) {
+                        count++;
+                    }
+                }
+            }
+        }
+
+        return(count);
+    }// end of countTeethOfType method
+
+}// end of public class
